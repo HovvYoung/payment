@@ -1,5 +1,6 @@
 package com.hovvyoung.payment.service;
 
+import com.hovvyoung.payment.pojo.PayInfo;
 import com.lly835.bestpay.enums.BestPayTypeEnum;
 import com.lly835.bestpay.model.PayResponse;
 
@@ -17,4 +18,11 @@ public interface IPayService {
     * async notify
     * */
     String asyncNotify(String notifyData);
+
+    /**
+     * query payment record by orderId
+     * @param orderId
+     * @return
+     */
+    PayInfo queryByOrderId(String orderId);
 }
