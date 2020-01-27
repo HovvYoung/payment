@@ -1,5 +1,6 @@
 package com.hovvyoung.payment.service.impl;
 
+import com.google.gson.Gson;
 import com.hovvyoung.payment.dao.PayInfoMapper;
 import com.hovvyoung.payment.enums.PayPlatformEnum;
 import com.hovvyoung.payment.pojo.PayInfo;
@@ -11,6 +12,7 @@ import com.lly835.bestpay.model.PayRequest;
 import com.lly835.bestpay.model.PayResponse;
 import com.lly835.bestpay.service.BestPayService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,11 @@ import java.math.BigDecimal;
 @Service
 public class PayServiceImpl implements IPayService {
 
+    private final static String QUEUE_PAY_NOTIFY = "payNotify";
+
+    @Autowired
+    private AmqpTemplate amqpTemplate;
+
     @Autowired
     private BestPayService bestPayService;
 
@@ -32,20 +39,18 @@ public class PayServiceImpl implements IPayService {
 
     @Override
     public PayResponse create(String orderId, BigDecimal amount, BestPayTypeEnum bestPayTypeEnum) {
-
-        PayRequest payRequest = new PayRequest();
-        payRequest.setPayTypeEnum(bestPayTypeEnum);
-        payRequest.setOrderId(orderId);
-        payRequest.setOrderName("6556518-最好的支付sdk");
-        payRequest.setOrderAmount(amount.doubleValue());
-//        payRequest.setOpenid("openid_xxxxxx");
-
         // write to db;
         PayInfo payInfo = new PayInfo(Long.parseLong(orderId),
                 PayPlatformEnum.getByBestPayTypeEnum(bestPayTypeEnum).getCode(),
                 OrderStatusEnum.NOTPAY.name(),
                 amount);
         payInfoMapper.insertSelective(payInfo);
+
+        PayRequest payRequest = new PayRequest();
+        payRequest.setPayTypeEnum(bestPayTypeEnum);
+        payRequest.setOrderId(orderId);
+        payRequest.setOrderName("6556518-最好的支付sdk");
+        payRequest.setOrderAmount(amount.doubleValue());
 
         PayResponse payResponse = bestPayService.pay(payRequest);
         log.info("create payResponse={}", payResponse);
@@ -84,7 +89,8 @@ public class PayServiceImpl implements IPayService {
             payInfoMapper.updateByPrimaryKeySelective(payInfo);
         }
 
-        //TODO payment send a MQ message, then mall receive the message.
+        //payment send a MQ message, then mall receive the message.
+        amqpTemplate.convertAndSend(QUEUE_PAY_NOTIFY, new Gson().toJson(payInfo));
 
         if (payResponse.getPayPlatformEnum() == BestPayPlatformEnum.WX) {
             //4. return response to wxPay not to notify anymore;

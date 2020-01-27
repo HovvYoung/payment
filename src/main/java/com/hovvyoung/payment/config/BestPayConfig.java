@@ -22,14 +22,13 @@ public class BestPayConfig {
         AliPayConfig aliPayConfig = new AliPayConfig();
         aliPayConfig.setAppId(alipayAccountConfig.getAppId());
         aliPayConfig.setPrivateKey(alipayAccountConfig.getPrivateKey());
-        aliPayConfig.setAliPayPublicKey(alipayAccountConfig.getAliPayPublicKey());
+        aliPayConfig.setAliPayPublicKey(alipayAccountConfig.getPublicKey());
         aliPayConfig.setNotifyUrl(alipayAccountConfig.getNotifyUrl());
         aliPayConfig.setReturnUrl(alipayAccountConfig.getReturnUrl());
 
         BestPayServiceImpl bestPayService = new BestPayServiceImpl();
         bestPayService.setWxPayConfig(wxPayConfig);
         bestPayService.setAliPayConfig(aliPayConfig);
-
         return bestPayService;
     }
 
